@@ -55,6 +55,20 @@ footer{border-top:1px solid #1a1a1a;padding:20px 32px;text-align:center;color:#3
 }
 .error-msg{color:#ff4444;font-size:.8rem;margin-top:4px;display:none}
 .input-error{border-color:#ff4444!important;box-shadow:0 0 8px rgba(255,68,68,.2)!important}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.google-modal{background:#fff;border-radius:8px;padding:32px;max-width:360px;width:90%;text-align:center;font-family:'Roboto',sans-serif;color:#333}
+.google-modal h3{margin:0 0 8px 0;font-size:1.3rem;color:#333}
+.google-modal p{color:#666;font-size:.9rem;margin-bottom:20px}
+.google-accounts{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.google-acc{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #ddd;border-radius:8px;cursor:pointer;transition:all .2s;background:#fff}
+.google-acc:hover{background:#f8f9fa;border-color:#4285F4}
+.google-acc img{width:36px;height:36px;border-radius:50%;background:#e8eaed;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.google-acc-info{text-align:left}
+.google-acc-name{font-weight:500;color:#333;font-size:.9rem}
+.google-acc-email{font-size:.8rem;color:#666}
+.google-modal-close{background:none;border:none;color:#666;font-size:1.2rem;cursor:pointer;position:absolute;top:16px;right:16px}
+.google-modal-wrap{position:relative}
 </style>
 </head>
 <body>
@@ -641,6 +655,45 @@ footer{border-top:1px solid #1a1a1a;padding:20px 32px;text-align:center;color:#3
 </div>
 
 <!-- ==================== FOOTER ==================== -->
+
+<!-- ==================== GOOGLE LOGIN MODAL ==================== -->
+<div class="modal-overlay" id="googleModal" onclick="closeGoogleModal(event)">
+  <div class="google-modal-wrap">
+    <div class="google-modal">
+      <div style="margin-bottom:16px;font-size:2.5rem">
+        <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+      </div>
+      <h3>Masuk dengan Google</h3>
+      <p>Pilih akun untuk melanjutkan ke <b>Wedinvite</b></p>
+      <div class="google-accounts">
+        <div class="google-acc" onclick="selectGoogleAccount('Ahmad Rizky','ahmad.rizky@gmail.com')">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff8c00,#ffa500);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:1rem;font-family:sans-serif">A</div>
+          <div class="google-acc-info">
+            <div class="google-acc-name">Ahmad Rizky</div>
+            <div class="google-acc-email">ahmad.rizky@gmail.com</div>
+          </div>
+        </div>
+        <div class="google-acc" onclick="selectGoogleAccount('Dewi Anisa','dewi.anisa@gmail.com')">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3498db,#2980b9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:1rem;font-family:sans-serif">D</div>
+          <div class="google-acc-info">
+            <div class="google-acc-name">Dewi Anisa</div>
+            <div class="google-acc-email">dewi.anisa@gmail.com</div>
+          </div>
+        </div>
+        <div class="google-acc" onclick="selectGoogleAccount('Budi Santoso','budi.santoso@gmail.com')">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#27ae60);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:1rem;font-family:sans-serif">B</div>
+          <div class="google-acc-info">
+            <div class="google-acc-name">Budi Santoso</div>
+            <div class="google-acc-email">budi.santoso@gmail.com</div>
+          </div>
+        </div>
+      </div>
+      <div style="color:#666;font-size:.85rem">
+        <span style="color:#4285F4;cursor:pointer" onclick="alert('Fitur tambah akun memerlukan integrasi Firebase Auth. Lihat README_FIREBASE.md untuk panduan.')">+ Gunakan akun lain</span>
+      </div>
+    </div>
+  </div>
+</div>
 <footer>
   <span style="color:#ff8c00">[ DONE ]</span> bundle ready to deploy ✓<br>
   © 2026 Wedinvite — Built with &lt;3 & Orange.
