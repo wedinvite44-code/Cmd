@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wedinvite — Undangan Digital Terminal Style</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',Courier,monospace;background:#0a0a0a;color:#ff8c00;overflow-x:hidden}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.page{display:none;animation:fadeIn .4s ease}
+.page.active{display:block}
+input,select,textarea{background:#111;border:1px solid #333;color:#ff8c00;padding:10px 14px;font-family:'Courier New',monospace;font-size:.95rem;width:100%;outline:none;transition:all .3s}
+input:focus,select:focus,textarea:focus{border-color:#ff8c00;box-shadow:0 0 8px rgba(255,140,0,.2)}
+.btn-primary{background:#ff8c00;color:#0a0a0a;border:none;padding:12px 24px;font-family:'Courier New',monospace;font-weight:bold;font-size:.95rem;cursor:pointer;transition:all .3s}
+.btn-primary:hover{background:#ffa500;box-shadow:0 0 20px rgba(255,140,0,.4)}
+.btn-outline{background:transparent;color:#ff8c00;border:1px solid #ff8c00;padding:12px 24px;font-family:'Courier New',monospace;font-weight:bold;font-size:.95rem;cursor:pointer;transition:all .3s}
+.btn-outline:hover{background:rgba(255,140,0,.1)}
+.card{border:1px solid #222;background:#0f0f0f;padding:24px;transition:all .3s}
+.card:hover{border-color:#ff8c00;transform:translateY(-2px)}
+.card-selected{border:2px solid #ff8c00!important;background:rgba(255,140,0,.05)!important}
+.nav-link{color:#ff8c00;text-decoration:none;font-size:.9rem;padding:8px 0;border-bottom:1px solid transparent;transition:all .3s;cursor:pointer}
+.nav-link:hover{border-bottom:1px solid #ff8c00}
+.tag{border:1px solid #ff8c00;color:#ff8c00;padding:6px 14px;font-size:.85rem;display:inline-block;margin:4px;cursor:pointer;transition:all .3s;background:transparent;font-family:'Courier New',monospace}
+.tag:hover,.tag.selected{background:#ff8c00;color:#0a0a0a}
+.step-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:32px}
+.step{width:36px;height:36px;border:1px solid #333;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#555;font-size:.85rem;font-weight:bold}
+.step.active{border-color:#ff8c00;color:#ff8c00;background:rgba(255,140,0,.1)}
+.step.done{border-color:#ff8c00;color:#0a0a0a;background:#ff8c00}
+
+/* Navbar */
+nav{border-bottom:1px solid #ff8c00;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;background:#0a0a0a;position:sticky;top:0;z-index:100}
+
+/* Sidebar Drawer */
+.sidebar-drawer{position:fixed;top:0;left:0;width:260px;height:100vh;background:#0a0a0a;border-right:1px solid #1a1a1a;z-index:200;transform:translateX(-100%);transition:transform .3s ease;padding:24px 0;overflow-y:auto}
+.sidebar-drawer.open{transform:translateX(0)}
+.sidebar-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:150;opacity:0;visibility:hidden;transition:all .3s}
+.sidebar-overlay.open{opacity:1;visibility:visible}
+.sidebar-link{color:#888;text-decoration:none;display:block;padding:12px 20px;border-left:3px solid transparent;transition:all .3s;cursor:pointer;font-size:.9rem;background:none;border-top:none;border-right:none;border-bottom:none;font-family:'Courier New',monospace;width:100%;text-align:left}
+.sidebar-link:hover,.sidebar-link.active{color:#ff8c00;border-left-color:#ff8c00;background:rgba(255,140,0,.05)}
+
+/* Menu button */
+.menu-btn{background:none;border:none;color:#ff8c00;font-size:1.4rem;cursor:pointer;padding:4px 8px;margin-right:8px;display:none}
+
+/* Dashboard pages full width */
+.dashboard-main{padding:32px;background:#0d0d0d;min-height:calc(100vh - 60px)}
+
+footer{border-top:1px solid #1a1a1a;padding:20px 32px;text-align:center;color:#333;font-size:.8rem;background:#0a0a0a}
+
+@media(max-width:768px){
+  nav{padding:14px 16px}
+  .menu-btn{display:block}
+  .dashboard-main{padding:20px 16px}
+}
+.error-msg{color:#ff4444;font-size:.8rem;margin-top:4px;display:none}
+.input-error{border-color:#ff4444!important;box-shadow:0 0 8px rgba(255,68,68,.2)!important}
+</style>
+</head>
+<body>
+
+<!-- ==================== NAVBAR ==================== -->
+<nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="goTo('landing')">
+      <span style="color:#ff8c00;font-weight:bold;font-size:1.3rem">$</span>
+      <span style="color:#fff;font-weight:bold;font-size:1.15rem;letter-spacing:2px">WEDINVITE</span>
+    </div>
+  </div>
+  <div id="nav-auth" style="display:flex;gap:20px;align-items:center">
+    <span class="nav-link" onclick="goTo('login')">./login</span>
+    <span class="nav-link" onclick="goTo('register')">./daftar</span>
+  </div>
+  <div id="nav-logged" style="display:none;gap:20px;align-items:center">
+        <span class="nav-link" onclick="goTo('dashboard')">./dashboard</span>
+    <span class="nav-link" onclick="logout()">./logout</span>
+  </div>
+</nav>
+
+<!-- ==================== SIDEBAR DRAWER ==================== -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-drawer" id="sidebarDrawer">
+  <div style="padding:0 20px 20px;border-bottom:1px solid #1a1a1a;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="color:#fff;font-weight:bold;font-size:.95rem">user@wedinvite</div>
+      <div style="color:#444;font-size:.75rem;margin-top:4px">Free Plan</div>
+    </div>
+    <button onclick="toggleSidebar()" style="background:none;border:none;color:#ff8c00;font-size:1.2rem;cursor:pointer">✕</button>
+  </div>
+  <button class="sidebar-link" data-nav="dashboard" onclick="goTo('dashboard');toggleSidebar()">📊 ./dashboard</button>
+  <button class="sidebar-link" data-nav="form-data" onclick="goTo('form-data');toggleSidebar()">📝 ./isi_data</button>
+  <button class="sidebar-link" data-nav="pilih-tema" onclick="goTo('pilih-tema');toggleSidebar()">🎨 ./pilih_tema</button>
+  <button class="sidebar-link" data-nav="editor" onclick="goTo('editor');toggleSidebar()">✏️ ./editor</button>
+  <button class="sidebar-link" data-nav="bagikan" onclick="goTo('bagikan');toggleSidebar()">🔗 ./bagikan</button>
+  <button class="sidebar-link" data-nav="pengaturan" onclick="goTo('pengaturan');toggleSidebar()">⚙️ ./pengaturan</button>
+</div>
+
+<!-- ==================== LANDING PAGE ==================== -->
+<div id="page-landing" class="page active">
+  <section style="padding:70px 32px 40px;text-align:center">
+    <div style="max-width:800px;margin:0 auto;text-align:left">
+      <div style="color:#444;font-size:.85rem;line-height:1.8;margin-bottom:20px">
+        <span style="color:#ff8c00">[ OK ]</span> initializing wedding engine...<br>
+        <span style="color:#ff8c00">[ OK ]</span> fetching templates...<br>
+        <span style="color:#ff8c00">[ OK ]</span> verifying love signatures...
+      </div>
+      <div style="margin:30px 0">
+        <span style="color:#ff8c00;font-size:1.2rem">&lt;</span>
+        <h1 style="display:inline;font-size:3.5rem;color:#ff8c00;margin:0 12px;text-shadow:0 0 25px rgba(255,140,0,.3);line-height:1.2">WED<br><span style="color:#fff">INVITE</span></h1>
+        <span style="color:#ff8c00;font-size:1.2rem">/&gt;</span>
+      </div>
+      <p style="color:#aaa;font-size:1rem;line-height:1.7;margin-bottom:28px">
+        <span style="color:#ff8c00">$</span> Platform undangan digital all-in-one. Pilih tema, isi data, edit, dan bagikan dalam hitungan menit.
+      </p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="goTo('register')">$ install --now</button>
+        <button class="btn-outline" onclick="goTo('login')">$ login --existing</button>
+      </div>
+      <div style="margin-top:30px;color:#333;font-size:.8rem">-------------------- // BUNDLE --------------------</div>
+    </div>
+  </section>
+  <section style="padding:30px 32px;display:flex;justify-content:center">
+    <div style="border:2px solid #ff8c00;padding:24px 50px;text-align:center;background:rgba(255,140,0,.04)">
+      <div style="color:#ff8c00;font-size:.8rem;letter-spacing:3px">COUNT:</div>
+      <div style="font-size:4rem;font-weight:bold;color:#fff;line-height:1;margin:8px 0;text-shadow:0 0 30px rgba(255,140,0,.3)">500+</div>
+      <div style="color:#ff8c00;font-size:.75rem;letter-spacing:2px">HAPPY COUPLES</div>
+    </div>
+  </section>
+  <section style="padding:30px 32px;max-width:600px;margin:0 auto">
+    <div style="color:#aaa;line-height:2;font-size:1rem">
+      <span style="color:#ff8c00">▸</span> plug and play ready<br>
+      <span style="color:#ff8c00">▸</span> zero configuration<br>
+      <span style="color:#ff8c00">▸</span> multi-religion support<br>
+      <span style="color:#ff8c00">▸</span> real-time editor
+    </div>
+  </section>
+  <section style="padding:20px 32px 60px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <span class="tag">#wedding</span>
+    <span class="tag">#engagement</span>
+    <span class="tag">#akad</span>
+    <span class="tag">#resepsi</span>
+    <span class="tag">#custom</span>
+  </section>
+</div>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div id="page-login" class="page">
+  <section style="padding:60px 32px;display:flex;justify-content:center">
+    <div style="width:100%;max-width:420px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="color:#ff8c00;font-size:2.5rem;margin-bottom:8px">&lt;/&gt;</div>
+        <h2 style="color:#fff;margin:0;font-size:1.6rem">$ login</h2>
+        <p style="color:#666;font-size:.85rem;margin-top:8px">Masuk ke akun Wedinvite-mu</p>
+      </div>
+      <div style="border:1px solid #222;padding:32px;background:#0f0f0f">
+        <div style="margin-bottom:18px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> email</label>
+          <input type="email" placeholder="nama@email.com" id="login-email">
+          <span class="error-msg" id="err-login-email">⚠ Email wajib diisi</span>
+        </div>
+        <div style="margin-bottom:24px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> password</label>
+          <input type="password" placeholder="••••••••" id="login-password">
+          <span class="error-msg" id="err-login-password">⚠ Password wajib diisi</span>
+        </div>
+        <button class="btn-primary" style="width:100%" onclick="handleLogin()">$ authenticate --user</button>
+        <div style="text-align:center;margin:16px 0;color:#444;font-size:.8rem">---------------- OR ----------------</div>
+        <button onclick="handleGoogleLogin()" style="width:100%;background:#fff;border:1px solid #333;color:#333;padding:12px 24px;font-family:'Courier New',monospace;font-weight:bold;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .3s" onmouseover="this.style.borderColor='#ff8c00'" onmouseout="this.style.borderColor='#333'">
+          <span style="display:inline-flex;gap:1px;font-size:1.1rem">
+            <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+          </span>
+          Masuk dengan Google
+        </button>
+        <div style="text-align:center;margin-top:20px;color:#555;font-size:.85rem">
+          Belum punya akun? <span style="color:#ff8c00;cursor:pointer" onclick="goTo('register')">$ daftar</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ==================== REGISTER PAGE ==================== -->
+<div id="page-register" class="page">
+  <section style="padding:60px 32px;display:flex;justify-content:center">
+    <div style="width:100%;max-width:420px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="color:#ff8c00;font-size:2.5rem;margin-bottom:8px">&lt;/&gt;</div>
+        <h2 style="color:#fff;margin:0;font-size:1.6rem">$ daftar</h2>
+        <p style="color:#666;font-size:.85rem;margin-top:8px">Buat akun Wedinvite baru</p>
+      </div>
+      <div style="border:1px solid #222;padding:32px;background:#0f0f0f">
+        <div style="margin-bottom:18px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> nama_lengkap</label>
+          <input type="text" placeholder="Nama kamu" id="reg-name">
+          <span class="error-msg" id="err-reg-name">⚠ Nama wajib diisi</span>
+        </div>
+        <div style="margin-bottom:18px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> email</label>
+          <input type="email" placeholder="nama@email.com" id="reg-email">
+          <span class="error-msg" id="err-reg-email">⚠ Email wajib diisi</span>
+        </div>
+        <div style="margin-bottom:18px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> no_whatsapp</label>
+          <input type="text" placeholder="08xxxxxxxxxx" id="reg-wa">
+          <span class="error-msg" id="err-reg-wa">⚠ Nomor WhatsApp wajib diisi</span>
+        </div>
+        <div style="margin-bottom:24px">
+          <label style="display:block;color:#888;font-size:.85rem;margin-bottom:6px"><span style="color:#ff8c00">$</span> password</label>
+          <input type="password" placeholder="Min. 8 karakter" id="reg-password">
+          <span class="error-msg" id="err-reg-password">⚠ Password minimal 8 karakter</span>
+        </div>
+        <button class="btn-primary" style="width:100%" onclick="handleRegister()">$ create --account</button>
+        <div style="text-align:center;margin:16px 0;color:#444;font-size:.8rem">---------------- OR ----------------</div>
+        <button onclick="handleGoogleLogin()" style="width:100%;background:#fff;border:1px solid #333;color:#333;padding:12px 24px;font-family:'Courier New',monospace;font-weight:bold;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .3s" onmouseover="this.style.borderColor='#ff8c00'" onmouseout="this.style.borderColor='#333'">
+          <span style="display:inline-flex;gap:1px;font-size:1.1rem">
+            <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+          </span>
+          Daftar dengan Google
+        </button>
+        <div style="text-align:center;margin-top:20px;color:#555;font-size:.85rem">
+          Sudah punya akun? <span style="color:#ff8c00;cursor:pointer" onclick="goTo('login')">$ login</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="page-dashboard" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 24px 0;font-size:1.4rem"><span style="color:#fff">//</span> DASHBOARD</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
+      <div class="card" style="text-align:center">
+        <div style="color:#ff8c00;font-size:1.8rem;font-weight:bold">0</div>
+        <div style="color:#666;font-size:.8rem;margin-top:4px">UNDANGAN DIBUAT</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="color:#ff8c00;font-size:1.8rem;font-weight:bold">0</div>
+        <div style="color:#666;font-size:.8rem;margin-top:4px">TAMU MENGONFIRMASI</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="color:#ff8c00;font-size:1.8rem;font-weight:bold">0</div>
+        <div style="color:#666;font-size:.8rem;margin-top:4px">DIBAGIKAN</div>
+      </div>
+    </div>
+    <h3 style="color:#fff;font-size:1.1rem;margin-bottom:16px">Quick Actions:</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:32px">
+      <div class="card" style="cursor:pointer" onclick="goTo('form-data')">
+        <div style="color:#ff8c00;font-size:1.5rem;margin-bottom:8px">📝</div>
+        <h4 style="color:#fff;margin:0 0 6px 0">Buat Undangan Baru</h4>
+        <p style="color:#666;font-size:.85rem;margin:0">Mulai dari mengisi data acara.</p>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="goTo('pilih-tema')">
+        <div style="color:#ff8c00;font-size:1.5rem;margin-bottom:8px">🎨</div>
+        <h4 style="color:#fff;margin:0 0 6px 0">Pilih Tema</h4>
+        <p style="color:#666;font-size:.85rem;margin:0">Jelajahi 50+ tema siap pakai.</p>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="goTo('bagikan')">
+        <div style="color:#ff8c00;font-size:1.5rem;margin-bottom:8px">🔗</div>
+        <h4 style="color:#fff;margin:0 0 6px 0">Bagikan Undangan</h4>
+        <p style="color:#666;font-size:.85rem;margin:0">Kirim link ke tamu undangan.</p>
+      </div>
+    </div>
+    <h3 style="color:#fff;font-size:1.1rem;margin-bottom:16px">Recent Logs:</h3>
+    <div style="border:1px solid #1a1a1a;background:#0a0a0a;padding:16px;font-size:.85rem;color:#555;line-height:1.8">
+      <span style="color:#ff8c00">[ INFO ]</span> Selamat datang di Wedinvite Dashboard<br>
+      <span style="color:#ff8c00">[ INFO ]</span> Silakan buat undangan pertamamu<br>
+      <span style="color:#444">[ WAIT ]</span> Menunggu data input...
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FORM DATA ==================== -->
+<div id="page-form-data" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 8px 0;font-size:1.4rem"><span style="color:#fff">//</span> ISI DATA UNDANGAN</h2>
+    <p style="color:#555;margin-bottom:24px;font-size:.9rem">Lengkapi informasi acara pernikahanmu</p>
+    <div class="step-bar">
+      <div class="step active" id="step1">1</div>
+      <div style="width:30px;height:1px;background:#333"></div>
+      <div class="step" id="step2">2</div>
+      <div style="width:30px;height:1px;background:#333"></div>
+      <div class="step" id="step3">3</div>
+    </div>
+    <div id="form-step-1">
+      <div style="border:1px solid #1a1a1a;padding:28px;background:#0f0f0f;margin-bottom:24px">
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> pilih_jenis_acara</h3>
+        <span class="error-msg" id="err-jenis" style="display:block;margin-bottom:12px">⚠ Pilih jenis acara terlebih dahulu</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px">
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'akad')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">🕌</div>
+            <div style="color:#fff;font-weight:bold">Akad Nikah</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'resepsi')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">🎉</div>
+            <div style="color:#fff;font-weight:bold">Resepsi</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'engagement')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">💍</div>
+            <div style="color:#fff;font-weight:bold">Lamaran</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'wedding')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">👰</div>
+            <div style="color:#fff;font-weight:bold">Pernikahan</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'tasyakuran')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">🤲</div>
+            <div style="color:#fff;font-weight:bold">Tasyakuran</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectJenis(this,'custom')" data-jenis>
+            <div style="font-size:2rem;margin-bottom:8px">✨</div>
+            <div style="color:#fff;font-weight:bold">Custom</div>
+          </div>
+        </div>
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> pilih_agama</h3>
+        <span class="error-msg" id="err-agama" style="display:block;margin-bottom:12px">⚠ Pilih agama terlebih dahulu</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'islam')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">☪️</div>
+            <div style="color:#fff;font-weight:bold">Islam</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'kristen')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">✝️</div>
+            <div style="color:#fff;font-weight:bold">Kristen</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'katolik')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">⛪</div>
+            <div style="color:#fff;font-weight:bold">Katolik</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'hindu')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">🕉️</div>
+            <div style="color:#fff;font-weight:bold">Hindu</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'buddha')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">☸️</div>
+            <div style="color:#fff;font-weight:bold">Buddha</div>
+          </div>
+          <div class="card" style="text-align:center;cursor:pointer" onclick="selectAgama(this,'konghucu')" data-agama>
+            <div style="font-size:2rem;margin-bottom:8px">🛕</div>
+            <div style="color:#fff;font-weight:bold">Konghucu</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn-primary" onclick="goToStep(2)">$ next --step →</button>
+      </div>
+    </div>
+    <div id="form-step-2" style="display:none">
+      <div style="border:1px solid #1a1a1a;padding:28px;background:#0f0f0f;margin-bottom:24px">
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> data_mempelai_pria</h3>
+        <span class="error-msg" id="err-step2" style="display:block;margin-bottom:12px">⚠ Semua field wajib diisi</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Lengkap</label><input type="text" placeholder="Nama mempelai pria" id="pria-nama"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Panggilan</label><input type="text" placeholder="Panggilan" id="pria-panggilan"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Ayah</label><input type="text" placeholder="Putra dari..." id="pria-ayah"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Ibu</label><input type="text" placeholder="& Ibu..." id="pria-ibu"></div>
+        </div>
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> data_mempelai_wanita</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Lengkap</label><input type="text" placeholder="Nama mempelai wanita" id="wanita-nama"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Panggilan</label><input type="text" placeholder="Panggilan" id="wanita-panggilan"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Ayah</label><input type="text" placeholder="Putri dari..." id="wanita-ayah"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Nama Ibu</label><input type="text" placeholder="& Ibu..." id="wanita-ibu"></div>
+        </div>
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> detail_acara</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Tanggal Acara</label><input type="date" id="acara-tanggal"></div>
+          <div><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Waktu</label><input type="time" id="acara-waktu"></div>
+          <div style="grid-column:1/-1"><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Lokasi / Alamat</label><textarea placeholder="Alamat lengkap tempat acara..." rows="3" style="resize:vertical" id="acara-lokasi"></textarea></div>
+          <div style="grid-column:1/-1"><label style="display:block;color:#888;font-size:.8rem;margin-bottom:6px">Link Google Maps</label><input type="text" placeholder="https://maps.google.com/..." id="acara-maps"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <button class="btn-outline" onclick="goToStep(1)">← $ prev --step</button>
+        <button class="btn-primary" onclick="goToStep(3)">$ next --step →</button>
+      </div>
+    </div>
+    <div id="form-step-3" style="display:none">
+      <div style="border:1px solid #1a1a1a;padding:28px;background:#0f0f0f;margin-bottom:24px">
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> upload_foto</h3>
+        <span class="error-msg" id="err-step3" style="display:block;margin-bottom:12px">⚠ Pilih musik latar terlebih dahulu</span>
+        <div style="border:2px dashed #333;padding:40px;text-align:center;margin-bottom:24px;cursor:pointer;transition:all .3s" onmouseover="this.style.borderColor='#ff8c00'" onmouseout="this.style.borderColor='#333'">
+          <div style="font-size:2.5rem;margin-bottom:12px">📁</div>
+          <div style="color:#666;font-size:.9rem">Drop foto pre-wedding di sini<br>atau klik untuk browse</div>
+          <div style="color:#444;font-size:.75rem;margin-top:8px">Max 5MB per file • JPG/PNG</div>
+        </div>
+        <h3 style="color:#fff;margin:0 0 20px 0;font-size:1.1rem"><span style="color:#ff8c00">$</span> pilih_musik</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div class="card" style="cursor:pointer" onclick="selectMusik(this)" data-musik>
+            <div style="color:#ff8c00;font-size:1.3rem;margin-bottom:6px">🎵</div>
+            <div style="color:#fff;font-size:.9rem">Romantis Klasik</div>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="selectMusik(this)" data-musik>
+            <div style="color:#ff8c00;font-size:1.3rem;margin-bottom:6px">🎵</div>
+            <div style="color:#fff;font-size:.9rem">Akustik Modern</div>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="selectMusik(this)" data-musik>
+            <div style="color:#ff8c00;font-size:1.3rem;margin-bottom:6px">🎵</div>
+            <div style="color:#fff;font-size:.9rem">Islami / Sholawat</div>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="selectMusik(this)" data-musik>
+            <div style="color:#ff8c00;font-size:1.3rem;margin-bottom:6px">🎵</div>
+            <div style="color:#fff;font-size:.9rem">Jazz Santai</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <button class="btn-outline" onclick="goToStep(2)">← $ prev --step</button>
+        <button class="btn-primary" onclick="finishForm()">$ save --and --continue ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PILIH TEMA ==================== -->
+<div id="page-pilih-tema" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 8px 0;font-size:1.4rem"><span style="color:#fff">//</span> PILIH TEMA</h2>
+    <p style="color:#555;margin-bottom:24px;font-size:.9rem">Pilih tema yang sesuai dengan selera dan konsep acaramu</p>
+    <div style="margin-bottom:24px">
+      <span class="tag selected" onclick="filterTema(this,'all')">all</span>
+      <span class="tag" onclick="filterTema(this,'elegan')">elegan</span>
+      <span class="tag" onclick="filterTema(this,'rustic')">rustic</span>
+      <span class="tag" onclick="filterTema(this,'minimalis')">minimalis</span>
+      <span class="tag" onclick="filterTema(this,'floral')">floral</span>
+      <span class="tag" onclick="filterTema(this,'tradisional')">tradisional</span>
+      <span class="tag" onclick="filterTema(this,'modern')">modern</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px">
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:3rem">🌙</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Midnight Blue</div><div style="color:#666;font-size:.8rem">Elegan • Modern</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#2d1b1b,#5c3a3a);display:flex;align-items:center;justify-content:center;font-size:3rem">🌹</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Rose Garden</div><div style="color:#666;font-size:.8rem">Floral • Romantis</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#1a2f1a,#2d4a2d);display:flex;align-items:center;justify-content:center;font-size:3rem">🌿</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Forest Whisper</div><div style="color:#666;font-size:.8rem">Rustic • Natural</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#2a2a2a,#444);display:flex;align-items:center;justify-content:center;font-size:3rem">⚫</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Monochrome</div><div style="color:#666;font-size:.8rem">Minimalis • Clean</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#3d2b1f,#6b4c35);display:flex;align-items:center;justify-content:center;font-size:3rem">🏛️</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Jawa Classic</div><div style="color:#666;font-size:.8rem">Tradisional • Adat</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#1f1f3d,#3d3d6b);display:flex;align-items:center;justify-content:center;font-size:3rem">✨</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Starry Night</div><div style="color:#666;font-size:.8rem">Magical • Modern</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#3d1f1f,#6b3d3d);display:flex;align-items:center;justify-content:center;font-size:3rem">🧧</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Oriental Red</div><div style="color:#666;font-size:.8rem">Tradisional • Meriah</div></div>
+      </div>
+      <div class="card" style="cursor:pointer;overflow:hidden" onclick="selectTema(this)">
+        <div style="height:160px;background:linear-gradient(135deg,#f5f5dc,#e8e8d0);display:flex;align-items:center;justify-content:center;font-size:3rem;color:#333">🌾</div>
+        <div style="padding:16px"><div style="color:#fff;font-weight:bold;margin-bottom:4px">Cream & Gold</div><div style="color:#666;font-size:.8rem">Elegan • Soft</div></div>
+      </div>
+    </div>
+    <div style="margin-top:32px;text-align:center">
+      <button class="btn-primary" onclick="goTo('editor')">$ use --selected --theme →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EDITOR DASHBOARD ==================== -->
+<div id="page-editor" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 8px 0;font-size:1.4rem"><span style="color:#fff">//</span> EDITOR</h2>
+    <p style="color:#555;margin-bottom:24px;font-size:.9rem">Live preview dan edit konten undanganmu</p>
+    <div style="display:grid;grid-template-columns:1fr;gap:24px" class="editor-grid">
+<style>
+@media(min-width:768px){
+  .editor-grid{grid-template-columns:1fr 1fr!important}
+}
+</style>
+      <div>
+        <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:20px;margin-bottom:16px">
+          <h4 style="color:#fff;margin:0 0 16px 0;font-size:1rem"><span style="color:#ff8c00">$</span> edit_teks_sambutan</h4>
+          <textarea rows="4" placeholder="Tulis kata sambutan atau quote..." style="resize:vertical"></textarea>
+        </div>
+        <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:20px;margin-bottom:16px">
+          <h4 style="color:#fff;margin:0 0 16px 0;font-size:1rem"><span style="color:#ff8c00">$</span> edit_warna_tema</h4>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="width:36px;height:36px;border-radius:50%;background:#ff8c00;border:2px solid #fff;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#e74c3c;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#3498db;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#2ecc71;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#9b59b6;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#f1c40f;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#1abc9c;border:2px solid transparent;cursor:pointer"></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#e91e63;border:2px solid transparent;cursor:pointer"></div>
+          </div>
+        </div>
+        <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:20px;margin-bottom:16px">
+          <h4 style="color:#fff;margin:0 0 16px 0;font-size:1rem"><span style="color:#ff8c00">$</span> toggle_fitur</h4>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <label style="display:flex;align-items:center;gap:10px;color:#aaa;cursor:pointer"><input type="checkbox" checked style="width:auto;accent-color:#ff8c00"> Countdown Timer</label>
+            <label style="display:flex;align-items:center;gap:10px;color:#aaa;cursor:pointer"><input type="checkbox" checked style="width:auto;accent-color:#ff8c00"> RSVP Form</label>
+            <label style="display:flex;align-items:center;gap:10px;color:#aaa;cursor:pointer"><input type="checkbox" checked style="width:auto;accent-color:#ff8c00"> Amplop Digital</label>
+            <label style="display:flex;align-items:center;gap:10px;color:#aaa;cursor:pointer"><input type="checkbox" style="width:auto;accent-color:#ff8c00"> Live Comments</label>
+            <label style="display:flex;align-items:center;gap:10px;color:#aaa;cursor:pointer"><input type="checkbox" checked style="width:auto;accent-color:#ff8c00"> Background Music</label>
+          </div>
+        </div>
+        <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:20px">
+          <h4 style="color:#fff;margin:0 0 16px 0;font-size:1rem"><span style="color:#ff8c00">$</span> rekening_amplop</h4>
+          <div style="display:grid;gap:10px">
+            <input type="text" placeholder="Nama Bank">
+            <input type="text" placeholder="Nomor Rekening">
+            <input type="text" placeholder="Atas Nama">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#888;font-size:.85rem">📱 Live Preview</span>
+          <div style="display:flex;gap:8px">
+            <span style="color:#ff8c00;font-size:.8rem;cursor:pointer;border:1px solid #ff8c00;padding:4px 10px">Mobile</span>
+            <span style="color:#555;font-size:.8rem;cursor:pointer;border:1px solid #333;padding:4px 10px">Desktop</span>
+          </div>
+        </div>
+        <div style="border:1px solid #1a1a1a;background:#111;max-height:600px;height:auto;overflow-y:auto;padding:24px;text-align:center">
+          <div style="max-width:340px;margin:0 auto;border:1px solid #222;background:#0a0a0a;min-height:500px;padding:20px">
+            <div style="color:#ff8c00;font-size:.7rem;margin-bottom:20px;letter-spacing:2px">THE WEDDING OF</div>
+            <h3 style="color:#fff;margin:0;font-size:1.4rem">Rizky &amp; Anisa</h3>
+            <div style="color:#444;font-size:.7rem;margin:16px 0">Sabtu, 15 Agustus 2026</div>
+            <div style="height:120px;background:#1a1a1a;margin:16px 0;display:flex;align-items:center;justify-content:center;color:#333;font-size:.8rem">[ Foto Cover ]</div>
+            <div style="color:#888;font-size:.75rem;line-height:1.6;margin:16px 0">"Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan-pasangan dari jenismu sendiri..."</div>
+            <div style="border-top:1px solid #222;margin:16px 0;padding-top:16px">
+              <div style="color:#ff8c00;font-size:.7rem;margin-bottom:8px">AKAD NIKAH</div>
+              <div style="color:#fff;font-size:.8rem">08:00 - 10:00 WIB</div>
+              <div style="color:#666;font-size:.75rem">Masjid Al-Hikmah</div>
+            </div>
+            <div style="border-top:1px solid #222;margin:16px 0;padding-top:16px">
+              <div style="color:#ff8c00;font-size:.7rem;margin-bottom:8px">RESEPSI</div>
+              <div style="color:#fff;font-size:.8rem">11:00 - 15:00 WIB</div>
+              <div style="color:#666;font-size:.75rem">Gedung Serbaguna</div>
+            </div>
+            <button style="background:#ff8c00;color:#0a0a0a;border:none;padding:10px 24px;font-family:'Courier New',monospace;font-weight:bold;font-size:.8rem;margin-top:16px;cursor:pointer">KONFIRMASI KEHADIRAN</button>
+          </div>
+        </div>
+        <div style="margin-top:12px;text-align:center">
+          <button class="btn-primary" onclick="goTo('bagikan')">$ publish --now ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== BAGIKAN ==================== -->
+<div id="page-bagikan" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 8px 0;font-size:1.4rem"><span style="color:#fff">//</span> BAGIKAN UNDANGAN</h2>
+    <p style="color:#555;margin-bottom:24px;font-size:.9rem">Undanganmu sudah live! Bagikan ke tamu undanganmu.</p>
+    <div style="max-width:700px">
+      <div style="border:2px solid #ff8c00;padding:28px;background:rgba(255,140,0,.04);margin-bottom:24px;text-align:center">
+        <div style="color:#888;font-size:.8rem;margin-bottom:8px">YOUR INVITATION URL</div>
+        <div style="color:#ff8c00;font-size:1.2rem;font-weight:bold;word-break:break-all;margin-bottom:16px">wedinvite.id/rizky-anisa-2026</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn-outline" style="font-size:.85rem;padding:8px 16px">📋 Copy Link</button>
+          <button class="btn-primary" style="font-size:.85rem;padding:8px 16px">👁️ Preview</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
+        <div class="card" style="text-align:center;cursor:pointer">
+          <div style="font-size:2rem;margin-bottom:8px">💬</div>
+          <div style="color:#fff;font-weight:bold;font-size:.95rem">WhatsApp</div>
+          <div style="color:#666;font-size:.8rem;margin-top:4px">Broadcast pesan</div>
+        </div>
+        <div class="card" style="text-align:center;cursor:pointer">
+          <div style="font-size:2rem;margin-bottom:8px">📧</div>
+          <div style="color:#fff;font-weight:bold;font-size:.95rem">Email</div>
+          <div style="color:#666;font-size:.8rem;margin-top:4px">Kirim via email</div>
+        </div>
+        <div class="card" style="text-align:center;cursor:pointer">
+          <div style="font-size:2rem;margin-bottom:8px">📱</div>
+          <div style="color:#fff;font-weight:bold;font-size:.95rem">QR Code</div>
+          <div style="color:#666;font-size:.8rem;margin-top:4px">Scan & share</div>
+        </div>
+      </div>
+      <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:24px">
+        <h3 style="color:#fff;margin:0 0 16px 0;font-size:1.05rem"><span style="color:#ff8c00">$</span> daftar_tamu</h3>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <input type="text" placeholder="Nama tamu..." style="flex:1">
+          <button class="btn-primary" style="width:auto">$ add</button>
+        </div>
+        <div style="max-height:200px;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #1a1a1a">
+            <span style="color:#aaa;font-size:.9rem">Bapak Ahmad & Keluarga</span>
+            <span style="color:#ff8c00;font-size:.75rem;cursor:pointer">[ hapus ]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #1a1a1a">
+            <span style="color:#aaa;font-size:.9rem">Ibu Siti & Keluarga</span>
+            <span style="color:#ff8c00;font-size:.75rem;cursor:pointer">[ hapus ]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #1a1a1a">
+            <span style="color:#aaa;font-size:.9rem">Pak Budi (Teman Kantor)</span>
+            <span style="color:#ff8c00;font-size:.75rem;cursor:pointer">[ hapus ]</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:#0a0a0a;border:1px dashed #333;text-align:center;color:#555;font-size:.85rem">Atau upload file CSV/Excel daftar tamu</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PENGATURAN ==================== -->
+<div id="page-pengaturan" class="page">
+  <div class="dashboard-main">
+    <h2 style="color:#ff8c00;margin:0 0 24px 0;font-size:1.4rem"><span style="color:#fff">//</span> PENGATURAN</h2>
+    <div style="max-width:600px">
+      <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:24px;margin-bottom:16px">
+        <h4 style="color:#fff;margin:0 0 16px 0"><span style="color:#ff8c00">$</span> profil_akun</h4>
+        <div style="display:grid;gap:14px">
+          <div><label style="color:#888;font-size:.8rem">Nama</label><input type="text" value="User Wedinvite"></div>
+          <div><label style="color:#888;font-size:.8rem">Email</label><input type="email" value="user@email.com"></div>
+          <div><label style="color:#888;font-size:.8rem">No. WhatsApp</label><input type="text" value="08123456789"></div>
+        </div>
+      </div>
+      <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:24px;margin-bottom:16px">
+        <h4 style="color:#fff;margin:0 0 16px 0"><span style="color:#ff8c00">$</span> keamanan</h4>
+        <div style="display:grid;gap:14px">
+          <div><label style="color:#888;font-size:.8rem">Password Lama</label><input type="password" placeholder="••••••••"></div>
+          <div><label style="color:#888;font-size:.8rem">Password Baru</label><input type="password" placeholder="••••••••"></div>
+        </div>
+      </div>
+      <div style="border:1px solid #1a1a1a;background:#0f0f0f;padding:24px;margin-bottom:16px">
+        <h4 style="color:#fff;margin:0 0 16px 0"><span style="color:#ff8c00">$</span> paket_berlangganan</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border:1px solid #333;background:#0a0a0a">
+          <div><div style="color:#fff;font-weight:bold">Free Plan</div><div style="color:#666;font-size:.8rem">1 undangan • Tema dasar</div></div>
+          <button class="btn-outline" style="font-size:.8rem;padding:8px 14px">Upgrade</button>
+        </div>
+      </div>
+      <button class="btn-primary" style="width:100%">$ save --changes ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <span style="color:#ff8c00">[ DONE ]</span> bundle ready to deploy ✓<br>
+  © 2026 Wedinvite — Built with &lt;3 & Orange.
+</footer>
+
+<script>
+let currentStep=1;
+let isLoggedIn=false;
+function goTo(pageId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  window.scrollTo(0,0);
+  updateSidebarActive(pageId);
+}
+function toggleSidebar(){
+  document.getElementById('sidebarDrawer').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function updateSidebarActive(pageId){
+  document.querySelectorAll('.sidebar-link').forEach(l=>{
+    l.classList.remove('active');
+    if(l.getAttribute('data-nav')===pageId) l.classList.add('active');
+  });
+}
+function handleLogin(){
+  let valid=true;
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-password').value.trim();
+
+  if(!email){showErr('err-login-email','login-email');valid=false}
+  else{hideErr('err-login-email','login-email')}
+
+  if(!pass){showErr('err-login-password','login-password');valid=false}
+  else{hideErr('err-login-password','login-password')}
+
+  if(!valid)return;
+
+  isLoggedIn=true;
+  document.getElementById('nav-auth').style.display='none';
+  document.getElementById('nav-logged').style.display='flex';
+  document.getElementById('menuBtn').style.display='block';
+  goTo('dashboard');
+}
+function handleRegister(){
+  let valid=true;
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const wa=document.getElementById('reg-wa').value.trim();
+  const pass=document.getElementById('reg-password').value.trim();
+
+  if(!name){showErr('err-reg-name','reg-name');valid=false}
+  else{hideErr('err-reg-name','reg-name')}
+
+  if(!email){showErr('err-reg-email','reg-email');valid=false}
+  else{hideErr('err-reg-email','reg-email')}
+
+  if(!wa){showErr('err-reg-wa','reg-wa');valid=false}
+  else{hideErr('err-reg-wa','reg-wa')}
+
+  if(!pass||pass.length<8){showErr('err-reg-password','reg-password');valid=false}
+  else{hideErr('err-reg-password','reg-password')}
+
+  if(!valid)return;
+
+  isLoggedIn=true;
+  document.getElementById('nav-auth').style.display='none';
+  document.getElementById('nav-logged').style.display='flex';
+  document.getElementById('menuBtn').style.display='block';
+  goTo('dashboard');
+}
+function logout(){
+  isLoggedIn=false;
+  document.getElementById('nav-auth').style.display='flex';
+  document.getElementById('nav-logged').style.display='none';
+  document.getElementById('menuBtn').style.display='none';
+  toggleSidebar();
+  goTo('landing');
+}
+function goToStep(step){
+  if(step>currentStep){
+    if(!validateStep(currentStep))return;
+  }
+  document.getElementById('form-step-1').style.display='none';
+  document.getElementById('form-step-2').style.display='none';
+  document.getElementById('form-step-3').style.display='none';
+  document.getElementById('form-step-'+step).style.display='block';
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById('step'+i);
+    el.classList.remove('active','done');
+    if(i<step)el.classList.add('done');
+    else if(i===step)el.classList.add('active');
+  }
+  currentStep=step;
+}
+function validateStep(step){
+  if(step===1){
+    const jenis=document.querySelector('[data-jenis].card-selected');
+    const agama=document.querySelector('[data-agama].card-selected');
+    let valid=true;
+    if(!jenis){document.getElementById('err-jenis').style.display='block';valid=false}
+    else{document.getElementById('err-jenis').style.display='none'}
+    if(!agama){document.getElementById('err-agama').style.display='block';valid=false}
+    else{document.getElementById('err-agama').style.display='none'}
+    return valid;
+  }
+  if(step===2){
+    const fields=['pria-nama','pria-panggilan','pria-ayah','pria-ibu','wanita-nama','wanita-panggilan','wanita-ayah','wanita-ibu','acara-tanggal','acara-waktu','acara-lokasi'];
+    let valid=true;
+    fields.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el||!el.value.trim()){el.classList.add('input-error');valid=false}
+      else{el.classList.remove('input-error')}
+    });
+    document.getElementById('err-step2').style.display=valid?'none':'block';
+    return valid;
+  }
+  if(step===3){
+    const musik=document.querySelector('[data-musik].card-selected');
+    if(!musik){document.getElementById('err-step3').style.display='block';return false}
+    else{document.getElementById('err-step3').style.display='none';return true}
+  }
+  return true;
+}
+function selectJenis(el,val){
+  document.querySelectorAll('[data-jenis]').forEach(c=>c.classList.remove('card-selected'));
+  el.classList.add('card-selected');
+}
+function selectAgama(el,val){
+  document.querySelectorAll('[data-agama]').forEach(c=>c.classList.remove('card-selected'));
+  el.classList.add('card-selected');
+}
+function selectMusik(el){
+  document.querySelectorAll('[data-musik]').forEach(c=>c.classList.remove('card-selected'));
+  el.classList.add('card-selected');
+}
+function selectTema(el){
+  document.querySelectorAll('#page-pilih-tema .card').forEach(c=>c.classList.remove('card-selected'));
+  el.classList.add('card-selected');
+}
+function filterTema(el,category){
+  document.querySelectorAll('#page-pilih-tema .tag').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function finishForm(){
+  if(!validateStep(3))return;
+  goTo('pilih-tema');
+}
+</script>
+</body>
+</html>
